@@ -1,0 +1,73 @@
+SELECT *
+FROM	t_date_time
+
+--DATEDIFF
+
+SELECT	A_time, A_date, GETDATE() Now,
+		DATEDIFF(MINUTE, A_time, GETDATE()) Diff
+FROM	t_date_time;
+
+SELECT	*, DATEDIFF(DAY, order_date, shipped_date) Day_Diff
+FROM	sale.orders
+
+--DATEADD
+
+SELECT	ORDER_DATE,
+		DATEADD(YEAR, 5, ORDER_DATE) 
+FROM	sale.orders
+
+
+SELECT	GETDATE(), DATEADD(HOUR, 5, GETDATE())
+
+--EOMONTH
+
+SELECT	EOMONTH(GETDATE()), EOMONTH(GETDATE(), 4)
+
+--ISDATE
+
+SELECT	ISDATE('2012-12-31'), ISDATE('2012-13-01')
+
+--ADD A COLUMN TO ORDER TABLE TO SHOW DELIVERY TIME
+--ADD ANOTHER COLUMN SET NOT_SHIPPED, NORMAL, FAST OR SLOW DEPENDING DELIVERY TIME
+--RETURN THE INF. OF ORDERS DELIVERED MORE THAN 2 DAYS
+
+
+WITH T1 AS(
+SELECT	*, DATEDIFF(DAY, order_date, shipped_date) Delivery_Time_Day
+FROM	sale.orders),
+
+T2 AS(
+SELECT	*,
+		CASE
+		WHEN Delivery_Time_Day IS NULL THEN 'Not Shipped'
+		WHEN Delivery_Time_Day = 0 THEN 'Fast'
+		WHEN Delivery_Time_Day <= 2 THEN 'Normal'
+		WHEN Delivery_Time_Day > 2 THEN 'Slow'
+		END AS Order_Label
+FROM	T1),
+
+T3 AS(
+SELECT	*
+FROM	T2
+WHERE	ORDER_LABEL = 'Slow'),
+
+T4 AS(
+SELECT	DATENAME(WEEKDAY, ORDER_DATE) DAY
+FROM	T3)
+
+SELECT	DAY, COUNT(T4.DAY)
+FROM	T4
+GROUP BY DAY
+
+--
+
+SELECT	SUM(CASE WHEN DATENAME(WEEKDAY, order_date) = 'Monday' THEN 1 END) MONDAY,
+		SUM(CASE WHEN DATENAME(WEEKDAY, order_date) = 'Tuesday' THEN 1 END) Tuesday,
+		SUM(CASE WHEN DATENAME(WEEKDAY, order_date) = 'Wednesday' THEN 1 END) Wednesday,
+		SUM(CASE WHEN DATENAME(WEEKDAY, order_date) = 'Thursday' THEN 1 END) Thursday,
+		SUM(CASE WHEN DATENAME(WEEKDAY, order_date) = 'Friday' THEN 1 END) Friday,
+		SUM(CASE WHEN DATENAME(WEEKDAY, order_date) = 'Saturday' THEN 1 END) Saturday,
+		SUM(CASE WHEN DATENAME(WEEKDAY, order_date) = 'Sunday' THEN 1 END) Sunday
+FROM	sale.orders
+WHERE	DATEDIFF(DAY, order_date, shipped_date) > 2
+
